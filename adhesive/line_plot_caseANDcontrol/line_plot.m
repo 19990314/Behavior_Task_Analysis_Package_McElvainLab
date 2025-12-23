@@ -3,12 +3,16 @@
 % 1. file name: remove_time_across_days.csv
 % 2. table with columns:
 % ID | Day | Trial1 | Trial2 | Group
+% Group is the experimental label, eg "Ctrl" or "SNr-DTA" in my case
 
 clear; clc;
 
 %% -------------------- Load data --------------------
 workDir = fileparts(mfilename('fullpath'));
-fileName = 'remove_time_across_days.csv';
+%time_label = "recognition";
+time_label = "removal";
+fileName = time_label + '_time_across_days.csv';
+yaxis_label = time_label + " time (s)";
 
 data = readtable(fullfile(workDir, fileName));
 %% -------------------- Preprocessing --------------------
@@ -91,7 +95,7 @@ end
 
 %% -------------------- Axes formatting --------------------
 xlabel('Experimental Day', 'FontSize', 12, 'FontWeight','bold');
-ylabel('Task Completion Time (s)', 'FontSize', 12, 'FontWeight','bold');
+ylabel(yaxis_label, 'FontSize', 12, 'FontWeight','bold');
 dayTicks = unique(data.Day);
 dayTicks = dayTicks(:)';   % ensure row vector
 
@@ -117,11 +121,11 @@ annotation('textbox', [0.15 0.82 0.3 0.1], ...
     'EdgeColor','none', ...
     'FontSize',10);
 
-title('Adhesive Removal Task Time', ...
+title('Adhesive Removal Task', ...
       'FontSize', 13, ...
       'FontWeight', 'bold');
 
 %% -------------------- Export --------------------
 % Recommended formats for journals
 %exportgraphics(gcf, fullfile(workDir, 'adhesive_removal_time.pdf'), 'ContentType','vector');
-exportgraphics(gcf, fullfile(workDir, 'adhesive_removal_time.png'), 'ContentType','vector');
+exportgraphics(gcf, fullfile(workDir, time_label + '_time.png'), 'ContentType','vector');
