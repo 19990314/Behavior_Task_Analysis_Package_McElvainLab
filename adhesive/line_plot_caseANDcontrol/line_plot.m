@@ -11,10 +11,11 @@ clear; clc;
 workDir = fileparts(mfilename('fullpath'));
 %time_label = "recognition";
 time_label = "removal";
+cohort_name_if_you_have = "p1c3";
 fileName = time_label + '_time_across_days.csv';
 yaxis_label = time_label + " time (s)";
 
-data = readtable(fullfile(workDir, fileName));
+data = readtable(fullfile(workDir, cohort_name_if_you_have,fileName));
 %% -------------------- Preprocessing --------------------
 mouseIDs = unique(data.ID, 'stable');
 nMice    = numel(mouseIDs);
@@ -28,8 +29,8 @@ for i = 1:nMice
 end
 
 % Base colors (RGB)
-nPath = min(3, nMice);
-nCtrl = min(2, max(nMice - nPath, 0));
+nPath = min(4, nMice);
+nCtrl = min(3, max(nMice - nPath, 0));
 basePath = [0.80 0.20 0.20];   % red family
 baseCtrl = [0.20 0.35 0.75];   % blue family
 % data.Group = "Path" or "Ctrl"
@@ -117,7 +118,12 @@ legend(hLegend, legendLabels, 'Location','eastoutside', 'FontSize',10);
 %% -------------------- Text Annotation --------------------
 annotation('textbox', [0.15 0.82 0.3 0.1], ...
     'String', {'Solid: baseline', ...
-               'Dashed: post-injection'}, ...
+               'Dashed: post-injection', ...
+               'SNr baseline avg: '+ string(mean(data.Trail1(isPath))),...
+               'SNr post-injection avg: '+ string(mean(data.Trail2(isPath))),...
+               'Ctrl baseline avg: '+ string(mean(data.Trail1(isCtrl))), ...
+               'Ctrl post-injection avg: '+ string(mean(data.Trail2(isCtrl)));
+}, ...
     'EdgeColor','none', ...
     'FontSize',10);
 
