@@ -1,14 +1,15 @@
-% Define the two input files
-baselineFile = "\\moorelaboratory.dts.usc.edu\Shared\Shuting\P1-SNr\B3_cohort_3_baseline_bahavior\stats_and_analysis\grid\grid_speed_stat_baseline.xlsx";
-postinjectionFile = "\\moorelaboratory.dts.usc.edu\Shared\Shuting\P1-SNr\B5_cohort_3_post_injection_bahavior\stats_and_analysis\grid\grid_speed_stat_baseline.xlsx";
+% Load the table
+T = readtable("\\moorelaboratory.dts.usc.edu\Shared\Shuting\P1-SNr\B3_cohort_3_baseline_bahavior\stats_and_analysis\grid\grid_speed_stat_baseline.xlsx");
 % Main script to generate both baseline and post-injection figures
 
-% Generate baseline figure and calculate averages
-fprintf('\n=== BASELINE ===\n');
+% Define the two input files
+baselineFile = "\\moorelaboratory.dts.usc.edu\Shared\Shuting\P1-SNr\B3_cohort_3_baseline_bahavior\stats_and_analysis\grid\grid_speed_stat_baseline.xlsx";
+postinjectionFile = "\\moorelaboratory.dts.usc.edu\Shared\Shuting\P1-SNr\B3_cohort_3_baseline_bahavior\stats_and_analysis\grid\grid_speed_stat_postinjection.xlsx";
+
+% Generate baseline figure
 generateSpeedSlipFigure(baselineFile, 'Baseline', 'speed_and_slipping_across_day_baseline.png');
 
-% Generate post-injection figure and calculate averages
-fprintf('\n=== POST-INJECTION ===\n');
+% Generate post-injection figure
 generateSpeedSlipFigure(postinjectionFile, 'Post-Injection', 'speed_and_slipping_across_day_postinjection.png');
 
 disp('Both figures generated successfully!');
@@ -42,30 +43,6 @@ function generateSpeedSlipFigure(inputFile, titlePrefix, outputFile)
     animals = unique(T.ANIMALID, 'stable');
     days = unique(T.ExperimentDay);
     numAnimals = numel(animals);
-    
-    % Calculate and print average speeds for days 3-5
-    fprintf('\nAverage MedianSpeedcmps for Days 3-5:\n');
-    fprintf('%-15s %-15s %-20s\n', 'ANIMALID', 'Injection', 'Avg Speed (cm/s)');
-    fprintf('%s\n', repmat('-', 1, 50));
-    
-    for i = 1:numAnimals
-        mask = T.ANIMALID == animals(i);
-        animalData = T(mask, :);
-        
-        % Filter for days 3-5
-        dayMask = animalData.ExperimentDay >= 3 & animalData.ExperimentDay <= 5;
-        speedsDay3to5 = animalData.MedianSpeedcmps(dayMask);
-        
-        % Calculate average
-        if ~isempty(speedsDay3to5)
-            avgSpeed = mean(speedsDay3to5, 'omitnan');
-            injectionType = char(animalData.Injection(1));
-            fprintf('%-15s %-15s %-20.2f\n', char(animals(i)), injectionType, avgSpeed);
-        else
-            fprintf('%-15s %-15s %-20s\n', char(animals(i)), char(animalData.Injection(1)), 'No data');
-        end
-    end
-    fprintf('\n');
     
     % Slip colormap: white → blue → red
     slipMap = [
