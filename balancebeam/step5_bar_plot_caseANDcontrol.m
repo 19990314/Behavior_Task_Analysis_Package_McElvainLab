@@ -1,8 +1,8 @@
 %% Balance beam: Baseline vs Post (two bars per mouse)
-clearvars; clc;clearvars; clc;
+clearvars; clc;
 % ---- INPUTS ----
-baselineFile = '/Volumes/Shared/Shuting/P1-SNr/B2_cohort_2_baseline_bahavior/stats_and_analysis/balancebeam/summary_behavior_metrics.xlsx';
-postFile     = '/Volumes/Shared/Shuting/P1-SNr/B4_cohort_2_post_injection_bahavior/stats_and_analysis/balancebeam/summary_behavior_metrics_post.xlsx';
+baselineFile = '\\moorelaboratory.dts.usc.edu\Shared\Shuting\P1-SNr\B3_cohort_3_baseline_bahavior\stats_and_analysis\balancebeam\summary_behavior_metrics.xlsx';
+postFile     = '\\moorelaboratory.dts.usc.edu\Shared\Shuting\P1-SNr\B5_cohort_3_post_injection_bahavior\stats_and_analysis\balancebeam\summary_behavior_metrics.xlsx';
 
 % Optional: slips (must align with ANIMALID order after grouping)
 % If you have slips per mouse per condition, use two vectors:
@@ -12,6 +12,10 @@ avgSlips_post     = [];   % e.g., [3, 6, 2, 4, 5];
 % ---- READ ----
 Tb = readtable(baselineFile);
 Tp = readtable(postFile);
+
+ANIMALID = cellfun(@(x) x(1:min(4, length(x))), Tb.FilePrefix, 'UniformOutput', false);
+Tb = addvars(Tb, ANIMALID, 'After', 'FilePrefix');
+Tp = addvars(Tp, ANIMALID, 'After', 'FilePrefix');
 
 % Ensure consistent ID type
 Tb.ANIMALID = string(Tb.ANIMALID);
@@ -42,10 +46,17 @@ data_p = [cross_p, crawl_p, pause_p];
 % ---- PLOT SETTINGS ----
 figure('Color','w'); hold on;
 
-colors = [ ...
-    0.2, 0.4, 0.6;   % Crossing
-    0.4, 0.6, 0.8;   % Crawling
-    0.7, 0.7, 0.7];  % Pause
+% Blue colors for baseline
+colors_baseline = [ ...
+    0.2, 0.4, 0.6;   % Crossing - dark blue
+    0.4, 0.6, 0.8;   % Crawling - medium blue
+    0.7, 0.85, 0.95]; % Pause - light blue
+
+% Red colors for post-injection
+colors_post = [ ...
+    0.6, 0.2, 0.2;   % Crossing - dark red
+    0.8, 0.4, 0.4;   % Crawling - medium red
+    0.95, 0.7, 0.7]; % Pause - light red
 
 barWidth = 0.35;         % each bar
 groupGap = 1.0;          % spacing between mice groups
@@ -54,16 +65,16 @@ xCenter  = (1:nMice) * groupGap;           % center per mouse
 xBase    = xCenter - barWidth/2;           % baseline bar x
 xPost    = xCenter + barWidth/2;           % post bar x
 
-% ---- Stacked bars: Baseline ----
+% ---- Stacked bars: Baseline (BLUE) ----
 hBarB = bar(xBase, data_b, 'stacked', 'BarWidth', barWidth);
 for i = 1:numel(hBarB)
-    hBarB(i).FaceColor = colors(i,:);
+    hBarB(i).FaceColor = colors_baseline(i,:);
 end
 
-% ---- Stacked bars: Post ----
+% ---- Stacked bars: Post (RED) ----
 hBarP = bar(xPost, data_p, 'stacked', 'BarWidth', barWidth);
 for i = 1:numel(hBarP)
-    hBarP(i).FaceColor = colors(i,:);
+    hBarP(i).FaceColor = colors_post(i,:);
 end
 
 % ---- Slip dots + labels (optional) ----
@@ -108,7 +119,7 @@ hSlipLegend = plot(nan, nan, 'kx', 'MarkerSize', 12, 'LineWidth', 1.5);
 
 ax = gca;
 ax.XTick = double(xCenter);              % ensure numeric
-ax.XTickLabel = cellstr(string(["SNr-DTA","SNr-DTA","SNr-DTA","Ctrl","Ctrl"])); % safe across MATLAB versions
+ax.XTickLabel = cellstr(string(["sc09(SNr-DTA)","sc10(SNr-DTA)","sc11(SNr-DTA)","sc12(SNr-DTA)","sc13(Ctrl)","sc14(Ctrl)","sc15(Ctrl)"])); % safe across MATLAB versions
 ax.FontSize = 11;
 ax.FontName = 'Arial';
 ax.XAxis.TickLabelGapOffset = 13;   % moves them down
@@ -120,21 +131,22 @@ title('Balance Beam Performance (Baseline vs Post-Injection)', 'FontSize', 14);
 % Condition labels under each mouse group (small, clean)
 for i = 1:nMice
     text(xBase(i), -0.02*max([topB; topP]+labelOffset+3), 'Base', ...
-        'HorizontalAlignment','center', 'FontSize',10);
+        'HorizontalAlignment','center', 'FontSize',10, 'Color', [0.2, 0.4, 0.6]);
     text(xPost(i), -0.02*max([topB; topP]+labelOffset+3), 'Post', ...
-        'HorizontalAlignment','center', 'FontSize',10);
+        'HorizontalAlignment','center', 'FontSize',10, 'Color', [0.6, 0.2, 0.2]);
 end
 
-ylim([0, max([topB; topP]) + labelOffset + 3]);
+ylim([0, max([topB; topP]) + labelOffset*0.6]);
 
 grid on;
 
 % ---- Legend ----
-% Use one set of bar handles (baseline) to represent state colors
-%lgd = legend([hBarB, hSlipLegend], {'Crossing', 'Crawling', 'Pausing', 'Slip counts'}, ...
-%    'Location', 'northeast', 'FontSize', 13, 'Box', 'off');
-lgd = legend([hBarB, hSlipLegend], {'Crossing', 'Crawling', 'Pausing'}, ...
-    'Location', 'northeast', 'FontSize', 13, 'Box', 'off');
+% Use all bar handles from both baseline and post
+lgd = legend([hBarB, hBarP], ...
+    {'Crossing (Base)', 'Crawling (Base)', 'Pausing (Base)', ...
+     'Crossing (Post)', 'Crawling (Post)', 'Pausing (Post)'}, ...
+    'Location', 'northeast', 'FontSize', 11, 'Box', 'off');
+
 lgd.Box = 'on';
 lgd.EdgeColor = [0 0 0];
 

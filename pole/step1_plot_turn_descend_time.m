@@ -1,0 +1,257 @@
+%% Load data
+baselinepath = "\\moorelaboratory.dts.usc.edu\Shared\Shuting\P1-SNr\B3_cohort_3_baseline_bahavior\stats_and_analysis\pole\";
+postinjectionpath = "\\moorelaboratory.dts.usc.edu\Shared\Shuting\P1-SNr\B5_cohort_3_post_injection_bahavior\stats_and_analysis\pole\";
+Tb = readtable(fullfile(baselinepath, "time_for_plo_baseline.xlsx"));
+Tp = readtable(fullfile(postinjectionpath, "time_for_plot_post.xlsx"));
+
+Tb.ANIMALID = string(Tb.ANIMALID);
+Tp.ANIMALID = string(Tp.ANIMALID);
+
+% mouse order
+animalIDs = ["SNr-DTA", "SNr-DTA","SNr-DTA","SNr-DTA","Ctrl","Ctrl","Ctrl"];
+animalIDs = ["SC09", "SC10","SC11","SC12","SC13","SC14","SC15"];
+numMice = numel(animalIDs);
+
+%% Containers
+meanTurning_b = zeros(numMice,1);
+meanDescending_b = zeros(numMice,1);
+meanTurning_p = zeros(numMice,1);
+meanDescending_p = zeros(numMice,1);
+
+rawTurning_b = cell(numMice,1);
+rawDescending_b = cell(numMice,1);
+rawTurning_p = cell(numMice,1);
+rawDescending_p = cell(numMice,1);
+
+%% Compute means + raw values
+for i = 1:numMice
+    id = animalIDs(i);
+
+    % Baseline
+    idxB = Tb.ANIMALID == id;
+    rawTurning_b{i} = Tb.TurningTime(idxB);
+    rawDescending_b{i} = Tb.DescendingTime(idxB);
+    meanTurning_b(i) = mean(rawTurning_b{i}, 'omitnan');
+    meanDescending_b(i) = mean(rawDescending_b{i}, 'omitnan');
+
+    % Post
+    idxP = Tp.ANIMALID == id;
+    rawTurning_p{i} = Tp.TurningTime(idxP);
+    rawDescending_p{i} = Tp.DescendingTime(idxP);
+
+    meanTurning_p(i) = mean(rawTurning_p{i}, 'omitnan');
+    meanDescending_p(i) = mean(rawDescending_p{i}, 'omitnan');
+end
+
+%% Prepare stacked data
+Yb = [meanTurning_b, meanDescending_b];   % baseline
+Yp = [meanTurning_p, meanDescending_p];   % post
+
+%% X positions (two bars per mouse)
+barWidth = 0.28;
+groupGap = 0.8;
+
+xCenter = (1:numMice) * groupGap;
+xBase   = xCenter - barWidth/2;
+xPost   = xCenter + barWidth/2;
+
+%% Plot
+figure('Color','w', 'Units','inches', 'Position',[1 1 12 6]); hold on;
+
+% Baseline bars
+hb = bar(xBase, Yb, 'stacked', 'BarWidth', barWidth);
+hb(1).FaceColor = [0.5 0.5 0.5];   % Turning
+hb(2).FaceColor = [0.3 0.6 0.9];   % Descending
+
+% Post bars (same colors, separate bars)
+hp = bar(xPost, Yp, 'stacked', 'BarWidth', barWidth);
+hp(1).FaceColor = [0.5 0.5 0.5];
+hp(2).FaceColor = [0.3 0.6 0.9];
+
+%% Raw data points (jittered)
+for i = 1:numMice
+    % Baseline jitter
+    nB = numel(rawTurning_b{i});
+    jB = (rand(1,nB)-0.5)*0.12;
+
+    scatter(xBase(i)+jB, rawTurning_b{i}, 18, 'k', 'o', 'LineWidth', 1.5);
+    scatter(xBase(i)+jB, rawTurning_b{i}+rawDescending_b{i}, ...
+        18, 'k', '^', 'LineWidth', 1.5);
+
+    % Post jitter
+    nP = numel(rawTurning_p{i});
+    jP = (rand(1,nP)-0.5)*0.12;
+
+    scatter(xPost(i)+jP, rawTurning_p{i}, 18, 'k', 'o', 'LineWidth', 1.5);
+    scatter(xPost(i)+jP, rawTurning_p{i}+rawDescending_p{i}, ...
+        18, 'k', '^', 'LineWidth', 1.5);
+end
+
+%% Axes & labels
+ax = gca;
+ax.XTick = xCenter;
+ax.XTickLabel = cellstr(string(["SC09(SNr-DTA)", "SC10(SNr-DTA)","SC11(SNr-DTA)","SC12(SNr-DTA)","SC13(Ctrl)","SC14(Ctrl)","SC15(Ctrl)"])); % safe across MATLAB versions
+ax.FontSize = 11;
+ax.FontName = 'Arial';
+ax.XAxis.TickLabelGapOffset = 13.5;   % moves them down
+
+ylabel('Pole Task Completion Time (sec)', 'FontSize', 13);
+title('Pole Task Completion Time (Baseline vs Post)', ...
+      'FontSize', 14, 'FontWeight', 'bold');
+
+yTop = max([sum(Yb,2); sum(Yp,2)], [], 'omitnan');
+if isempty(yTop) || ~isfinite(yTop)
+    yTop = 1;  % safe fallback
+end
+ylim([0, yTop*1.15]);
+
+box off;
+grid on;
+
+%% Condition labels under bars
+for i = 1:numMice
+    text(xBase(i), -0.02*ax.YLim(2), 'Base', ...
+        'HorizontalAlignment','center', 'FontSize',10);
+    text(xPost(i), -0.02*ax.YLim(2), 'Post', ...
+        'HorizontalAlignment','center', 'FontSize',10);
+end
+
+%% Legend (state-based, clean)
+hTurn = scatter(nan,nan,50,[0.5 0.5 0.5],'o','LineWidth',1.6);
+hDesc = scatter(nan,nan,50,[0.3 0.6 0.9],'^','LineWidth',1.6);
+
+lgd = legend([hTurn,hDesc], {'Turning','Descending'}, ...
+    'Location','northeast','FontSize',13,'Box','off');
+lgd.Box = 'on';
+lgd.EdgeColor = [0 0 0];
+
+%% Annotation
+annotation('textbox',[0.12,0.000001,0.8,0.05], ...
+    'String','*Bars show mean turning + descending time across four testing days. Dots show individual trials.', ...
+    'EdgeColor','none','HorizontalAlignment','left','FontSize',10);
+
+%% Save
+print(gcf,fullfile(postinjectionpath,'pole_task_baseline_vs_post.png'),'-dpng','-r300');
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+%% Compute means + raw values
+for i = 1:numMice
+    id = animalIDs(i);
+
+    % Baseline
+    idxB = Tb.ANIMALID == id;
+    rawTurning_b{i} = Tb.TurningTimewithoutliers(idxB);
+    rawDescending_b{i} = Tb.DescendingTimewithoutliers(idxB);
+    meanTurning_b(i) = mean(rawTurning_b{i}, 'omitnan');
+    meanDescending_b(i) = mean(rawDescending_b{i}, 'omitnan');
+
+    % Post
+    idxP = Tp.ANIMALID == id;
+    rawTurning_p{i} = Tp.TurningTimewithoutliers(idxP);
+    rawDescending_p{i} = Tp.DescendingTimewithoutliers(idxP);
+
+    meanTurning_p(i) = mean(rawTurning_p{i}, 'omitnan');
+    meanDescending_p(i) = mean(rawDescending_p{i}, 'omitnan');
+end
+
+%% Prepare stacked data
+Yb = [meanTurning_b, meanDescending_b];   % baseline
+Yp = [meanTurning_p, meanDescending_p];   % post
+
+%% X positions (two bars per mouse)
+barWidth = 0.28;
+groupGap = 0.8;
+
+xCenter = (1:numMice) * groupGap;
+xBase   = xCenter - barWidth/2;
+xPost   = xCenter + barWidth/2;
+
+%% Plot
+figure('Color','w', 'Units','inches', 'Position',[1 1 12 6]); hold on;
+
+% Baseline bars
+hb = bar(xBase, Yb, 'stacked', 'BarWidth', barWidth);
+hb(1).FaceColor = [0.5 0.5 0.5];   % Turning
+hb(2).FaceColor = [0.3 0.6 0.9];   % Descending
+
+% Post bars (same colors, separate bars)
+hp = bar(xPost, Yp, 'stacked', 'BarWidth', barWidth);
+hp(1).FaceColor = [0.5 0.5 0.5];
+hp(2).FaceColor = [0.3 0.6 0.9];
+
+%% Raw data points (jittered)
+for i = 1:numMice
+    % Baseline jitter
+    nB = numel(rawTurning_b{i});
+    jB = (rand(1,nB)-0.5)*0.12;
+
+    scatter(xBase(i)+jB, rawTurning_b{i}, 18, 'k', 'o', 'LineWidth', 1.5);
+    scatter(xBase(i)+jB, rawTurning_b{i}+rawDescending_b{i}, ...
+        18, 'k', '^', 'LineWidth', 1.5);
+
+    % Post jitter
+    nP = numel(rawTurning_p{i});
+    jP = (rand(1,nP)-0.5)*0.12;
+
+    scatter(xPost(i)+jP, rawTurning_p{i}, 18, 'k', 'o', 'LineWidth', 1.5);
+    scatter(xPost(i)+jP, rawTurning_p{i}+rawDescending_p{i}, ...
+        18, 'k', '^', 'LineWidth', 1.5);
+end
+
+%% Axes & labels
+ax = gca;
+ax.XTick = xCenter;
+ax.XTickLabel = cellstr(string(["SC09(SNr-DTA)", "SC10(SNr-DTA)","SC11(SNr-DTA)","SC12(SNr-DTA)","SC13(Ctrl)","SC14(Ctrl)","SC15(Ctrl)"])); % safe across MATLAB versions
+ax.FontSize = 11;
+ax.FontName = 'Arial';
+ax.XAxis.TickLabelGapOffset = 13.5;   % moves them down
+
+ylabel('Pole Task Completion Time (sec)', 'FontSize', 13);
+title('Pole Task Completion Time (Baseline vs Post)', ...
+      'FontSize', 14, 'FontWeight', 'bold');
+
+yTop = max([sum(Yb,2); sum(Yp,2)], [], 'omitnan');
+if isempty(yTop) || ~isfinite(yTop)
+    yTop = 1;  % safe fallback
+end
+ylim([0, yTop*1.15]);
+
+box off;
+grid on;
+
+%% Condition labels under bars
+for i = 1:numMice
+    text(xBase(i), -0.02*ax.YLim(2), 'Base', ...
+        'HorizontalAlignment','center', 'FontSize',10);
+    text(xPost(i), -0.02*ax.YLim(2), 'Post', ...
+        'HorizontalAlignment','center', 'FontSize',10);
+end
+
+%% Legend (state-based, clean)
+hTurn = scatter(nan,nan,50,[0.5 0.5 0.5],'o','LineWidth',1.6);
+hDesc = scatter(nan,nan,50,[0.3 0.6 0.9],'^','LineWidth',1.6);
+
+lgd = legend([hTurn,hDesc], {'Turning','Descending'}, ...
+    'Location','northeast','FontSize',13,'Box','off');
+lgd.Box = 'on';
+lgd.EdgeColor = [0 0 0];
+
+%% Annotation
+annotation('textbox',[0.12,0.000001,0.8,0.05], ...
+    'String','*Bars show mean turning + descending time across four testing days. Dots show individual trials.', ...
+    'EdgeColor','none','HorizontalAlignment','left','FontSize',10);
+
+%% Save
+print(gcf,fullfile(postinjectionpath,'pole_task_baseline_vs_post_outliersincluded.png'),'-dpng','-r300');

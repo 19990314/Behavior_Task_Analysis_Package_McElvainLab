@@ -1,0 +1,87 @@
+% Load data
+data = readtable('time_for_plot.xlsx');
+
+% Define desired mouse order: GPi-DTA in middle
+desiredOrder = {'CTR', 'GPi-DTA', 'SNr-DTA'};
+[~, sortIdx] = ismember(desiredOrder, data.ANIMALID);
+animalIDs = desiredOrder;
+
+% Initialize containers
+numMice = length(animalIDs);
+meanTurning = zeros(numMice,1);
+meanDescending = zeros(numMice,1);
+
+% Prepare individual values for plotting
+rawTurning = cell(numMice, 1);
+rawDescending = cell(numMice, 1);
+
+% Compute means
+for i = 1:numMice
+    thisMouse = strcmp(data.ANIMALID, animalIDs{i});
+    turningVals = data.TurningTime(thisMouse);
+    descendingVals = data.DescendingTime(thisMouse);
+
+    meanTurning(i) = mean(turningVals);
+    meanDescending(i) = mean(descendingVals);
+
+    rawTurning{i} = turningVals;
+    rawDescending{i} = descendingVals;
+end
+
+% Combine for stacked bar
+Y = [meanTurning, meanDescending];
+x = 1:numMice;
+
+figure;
+hold on;
+
+% Bar plot
+barHandle = bar(x, Y, 'stacked', 'BarWidth', 0.6);
+barHandle(1).FaceColor = [0.5 0.5 0.5];  % Gray for Turning
+barHandle(2).FaceColor = [0.3 0.6 0.9];  % Blue for Descending
+
+% Add individual data points (jittered black dots)
+for i = 1:numMice
+    nPoints = numel(rawTurning{i});
+    jitter = (rand(1, nPoints) - 0.5) * 0.2;
+
+    % Turning raw points
+    scatter(x(i) + jitter, rawTurning{i}, 20, 'k', 'o', 'LineWidth', 1.8);
+
+    % Descending raw points (stacked above turning)
+    scatter(x(i) + jitter, rawTurning{i} + rawDescending{i}, ...
+        20, 'k', '^', 'LineWidth', 1.8);
+end
+
+% Axis and labels
+set(gca, 'XTick', x, 'XTickLabel', animalIDs, 'FontSize', 12, 'FontName', 'Arial');
+ylabel('Pole Task Completion Time (sec)', 'FontSize', 13);
+ylim([0, max(meanTurning + meanDescending) * 1.2]);
+title('Pole Task Completion Time', 'FontSize', 14, 'FontWeight', 'bold');
+box off;
+
+% Legend
+% Dummy bar + marker for Turning
+hTurn = scatter(nan, nan, 50, [0.5 0.5 0.5], 'o', ...
+    'LineWidth', 1.6, 'MarkerFaceColor', 'none');  % gray outline circle
+
+% Dummy bar + marker for Descending
+hDesc = scatter(nan, nan, 50, [0.3 0.6 0.9], '^', ...
+    'LineWidth', 1.6, 'MarkerFaceColor', 'none');  % blue outline triangle
+
+% Legend
+lgd = legend([hTurn, hDesc], ...
+    {'Turning', 'Descending'}, ...
+    'Location', 'northeast', ...
+    'FontSize', 13, 'Box', 'off');
+
+lgd.Box = 'on';            % turns on the box
+lgd.EdgeColor = [0 0 0];   % sets the border color to black
+
+% Annotation
+annotation('textbox', [0.12, 0.01, 0.8, 0.05], 'String', ...
+    '*Each bar shows the average turning and descending time across four testing days for each mouse.', ...
+    'EdgeColor', 'none', 'HorizontalAlignment', 'left', 'FontSize', 10);
+
+% Save to file
+print(gcf, 'pole_task_mean_only_dots_centered_gpi.png', '-dpng', '-r300');

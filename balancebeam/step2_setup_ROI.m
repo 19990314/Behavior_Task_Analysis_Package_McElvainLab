@@ -274,7 +274,7 @@ function batch_track_roi_tracking()
         save(masterMatPath, 'masterSummary');
         
         % Also write CSV next to the MAT
-masterCsvPath = fullfile(dataDir, 'tracking_master_summary.csv');
+masterCsvPath = fullfile(dataDir, 'stats_and_analysis/balancebeam/tracking_master_summary.csv');
 try
     writetable(masterSummary, masterCsvPath);  % includes headers
     fprintf('\n🧾 Master CSV saved: %s\n', masterCsvPath);

@@ -105,7 +105,6 @@ function generateSpeedSlipFigure(inputFile, titlePrefix, outputFile)
         
         % Get the injection type for this animal
         animalIdx = find(mask, 1);
-        legendLabels(end+1) = string(T.Injection(animalIdx));
         
         % Colored dots for slips
         for j = 1:numel(dayVals)
@@ -115,7 +114,8 @@ function generateSpeedSlipFigure(inputFile, titlePrefix, outputFile)
                 'MarkerEdgeColor', 'k', 'LineWidth', 1);
         end
     end
-    
+    legendLabels = string(["sc09(SNr-DTA)","sc10(SNr-DTA)","sc11(SNr-DTA)","sc12(SNr-DTA)","sc13(Ctrl)","sc14(Ctrl)","sc15(Ctrl)"])
+
     % Dummy scatter plots for slip legend
     for k = 0:maxSlip
         hDot = scatter(NaN, NaN, 70, slipMap(k+1,:), ...
